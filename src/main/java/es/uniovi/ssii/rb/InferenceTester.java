@@ -242,10 +242,7 @@ public class InferenceTester {
 
 	public static void main(String[] args) throws Exception {
 
-		InferenceTester obj = new InferenceTester("barley.pgmx");
-
-		long initialSeed=0L;
-		obj.setSeed(initialSeed);
+		InferenceTester obj = new InferenceTester("water.pgmx");
 
 		System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
 				obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
@@ -258,6 +255,7 @@ public class InferenceTester {
 
 		System.out.println("#### Eliminacion de variables (VEPropagation) ####");
 		long time=0;
+		long initialSeed=0L;
 		for(int i=0;i<5;i++) {
 			System.out.println();
 			initialSeed++;
@@ -271,6 +269,7 @@ public class InferenceTester {
 
 		System.out.println("#### Arboles de uniones (HuginPropagation)#### ");
 		time=0;
+		initialSeed=0L;
 		for(int i=0;i<5;i++) {
 			System.out.println();
 			initialSeed++;
@@ -285,10 +284,10 @@ public class InferenceTester {
 		System.out.println("######## Inferencia aproximada ########\n");
 
 		System.out.println("#### Muestreo estocastico (LogicSampling) ####");
+		initialSeed=0L;//La misma semilla para los algoritmos de inferencia aproximada
 		time=0;
 		for(int i=0;i<5;i++) {
 			System.out.println();
-			initialSeed++;
 			obj.setSeed(initialSeed);
 			time+=obj.LSInference(variablesOfInterest, evidence);
 			System.out.println();
@@ -301,7 +300,6 @@ public class InferenceTester {
 		time=0;
 		for(int i=0;i<5;i++) {
 			System.out.println();
-			initialSeed++;
 			obj.setSeed(initialSeed);
 			time+=obj.LWInference(variablesOfInterest, evidence);
 			System.out.println();
