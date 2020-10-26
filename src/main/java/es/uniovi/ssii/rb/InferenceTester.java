@@ -63,13 +63,43 @@ public class InferenceTester {
 
 		propagation.setPostResolutionEvidence(evidence);
 
-		System.out.print("Variable elimination\n");
+		System.out.print("Variable elimination (VE)\n");
 		long startTime = System.nanoTime();
 		try {
 			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
 			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
 
 		} catch (IncompatibleEvidenceException | NotEvaluableNetworkException e) {
+			e.printStackTrace();
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
+		long endTime = System.nanoTime();
+
+		printTime(endTime - startTime);
+
+		return (endTime - startTime);
+	}
+
+	public long HuginInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
+
+		HuginPropagation propagation = null;
+		try {
+			propagation = new HuginPropagation(probNet);
+		} catch (NotEvaluableNetworkException e) {
+			e.printStackTrace();
+		}
+		propagation.setVariablesOfInterest(variablesOfInterest);
+
+		propagation.setPostResolutionEvidence(evidence);
+
+		System.out.print("Arboles de uniones (HuginPropagation)\n");
+		long startTime = System.nanoTime();
+		try {
+			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
+			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
+
+		} catch (IncompatibleEvidenceException e) {
 			e.printStackTrace();
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
@@ -94,37 +124,7 @@ public class InferenceTester {
 
 		propagation.setPostResolutionEvidence(evidence);
 
-		System.out.print("Variable elimination\n");
-		long startTime = System.nanoTime();
-		try {
-			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
-			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
-
-		} catch (IncompatibleEvidenceException e) {
-			e.printStackTrace();
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		long endTime = System.nanoTime();
-
-		printTime(endTime - startTime);
-
-		return (endTime - startTime);
-	}
-
-	public long HuginInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
-
-		HuginPropagation propagation = null;
-		try {
-			propagation = new HuginPropagation(probNet);
-		} catch (NotEvaluableNetworkException e) {
-			e.printStackTrace();
-		}
-		propagation.setVariablesOfInterest(variablesOfInterest);
-
-		propagation.setPostResolutionEvidence(evidence);
-
-		System.out.print("Variable elimination\n");
+		System.out.print("Muestreo estocastico (LogicSample)\n");
 		long startTime = System.nanoTime();
 		try {
 			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
@@ -155,7 +155,7 @@ public class InferenceTester {
 
 		propagation.setPostResolutionEvidence(evidence);
 
-		System.out.print("Variable elimination\n");
+		System.out.print("Ponderacion de la verosimilitud (LikelihoodWeighting)\n");
 		long startTime = System.nanoTime();
 		try {
 			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
@@ -242,25 +242,73 @@ public class InferenceTester {
 
 	public static void main(String[] args) throws Exception {
 
-		String[] networks = {"alarm.pgmx", "asia.pgmx", "Barley.pgmx", "Child.pgmx", "Diabetes.pgmx", "insurance.pgmx", "Link.pgmx", "Pigs.pgmx", "water.pgmx", "win95.pgmx"};
+		InferenceTester obj = new InferenceTester("barley.pgmx");
 
-		for(int i=0;i<networks.length;i++) {
-			
-			System.out.println("Network: "+networks[i]+", method: ");
-			InferenceTester obj = new InferenceTester(networks[i]);
+		long initialSeed=0L;
+		obj.setSeed(initialSeed);
 
-			obj.setSeed(9762L);
+		System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
+				obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
 
-			System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
-					obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
+		EvidenceCase evidence = obj.getRandomEvidence(1);
+		List<Variable> variablesOfInterest = obj.getRandomVariablesOfInterest(6, evidence);//en enunciado pide 6 en vez de 1
 
-			EvidenceCase evidence = obj.getRandomEvidence(2);
-			List<Variable> variablesOfInterest = obj.getRandomVariablesOfInterest(6, evidence);//en enunciado pide 6 en vez de 1
 
-			obj.VEInference(variablesOfInterest, evidence);
-			
+		System.out.println("######## Inferencia exacta ########\n");
+
+		System.out.println("#### Eliminacion de variables (VEPropagation) ####");
+		long time=0;
+		for(int i=0;i<5;i++) {
+			System.out.println();
+			initialSeed++;
+			obj.setSeed(initialSeed);
+			time+=obj.VEInference(variablesOfInterest, evidence);
+			System.out.println();
 		}
-		
+		System.out.println();
+		System.out.println("Tiempo medio");
+		printTime(time/5);
+
+		System.out.println("#### Arboles de uniones (HuginPropagation)#### ");
+		time=0;
+		for(int i=0;i<5;i++) {
+			System.out.println();
+			initialSeed++;
+			obj.setSeed(initialSeed);
+			time+=obj.HuginInference(variablesOfInterest, evidence);
+			System.out.println();
+		}
+		System.out.println();
+		System.out.println("Tiempo medio");
+		printTime(time/5);
+
+		System.out.println("######## Inferencia aproximada ########\n");
+
+		System.out.println("#### Muestreo estocastico (LogicSampling) ####");
+		time=0;
+		for(int i=0;i<5;i++) {
+			System.out.println();
+			initialSeed++;
+			obj.setSeed(initialSeed);
+			time+=obj.LSInference(variablesOfInterest, evidence);
+			System.out.println();
+		}
+		System.out.println();
+		System.out.println("Tiempo medio");
+		printTime(time/5);
+
+		System.out.println("#### Ponderacion de la verosimilitud (LikelihoodWeighting) ####");
+		time=0;
+		for(int i=0;i<5;i++) {
+			System.out.println();
+			initialSeed++;
+			obj.setSeed(initialSeed);
+			time+=obj.LWInference(variablesOfInterest, evidence);
+			System.out.println();
+		}
+		System.out.println();
+		System.out.println("Tiempo medio");
+		printTime(time/5);
 	}
 
 }
