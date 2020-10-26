@@ -80,12 +80,73 @@ public class InferenceTester {
 
 		return (endTime - startTime);
 	}
-	
+
 	public long LSInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
 
 		LogicSampling propagation = null;
 		try {
 			propagation = new LogicSampling(probNet);
+		} catch (NotEvaluableNetworkException e) {
+			e.printStackTrace();
+		}
+		propagation.setSampleSize(10000);
+		propagation.setVariablesOfInterest(variablesOfInterest);
+
+		propagation.setPostResolutionEvidence(evidence);
+
+		System.out.print("Variable elimination\n");
+		long startTime = System.nanoTime();
+		try {
+			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
+			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
+
+		} catch (IncompatibleEvidenceException e) {
+			e.printStackTrace();
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
+		long endTime = System.nanoTime();
+
+		printTime(endTime - startTime);
+
+		return (endTime - startTime);
+	}
+
+	public long HuginInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
+
+		HuginPropagation propagation = null;
+		try {
+			propagation = new HuginPropagation(probNet);
+		} catch (NotEvaluableNetworkException e) {
+			e.printStackTrace();
+		}
+		propagation.setVariablesOfInterest(variablesOfInterest);
+
+		propagation.setPostResolutionEvidence(evidence);
+
+		System.out.print("Variable elimination\n");
+		long startTime = System.nanoTime();
+		try {
+			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
+			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
+
+		} catch (IncompatibleEvidenceException e) {
+			e.printStackTrace();
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
+		long endTime = System.nanoTime();
+
+		printTime(endTime - startTime);
+
+		return (endTime - startTime);
+	}
+
+	public long LWInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
+
+		LikelihoodWeighting propagation = null;
+		try {
+			propagation = new LikelihoodWeighting(probNet);
 		} catch (NotEvaluableNetworkException e) {
 			e.printStackTrace();
 		}
@@ -181,17 +242,25 @@ public class InferenceTester {
 
 	public static void main(String[] args) throws Exception {
 
-		InferenceTester obj = new InferenceTester("asia.pgmx");
+		String[] networks = {"alarm.pgmx", "asia.pgmx", "Barley.pgmx", "Child.pgmx", "Diabetes.pgmx", "insurance.pgmx", "Link.pgmx", "Pigs.pgmx", "water.pgmx", "win95.pgmx"};
 
-		obj.setSeed(9762L);
+		for(int i=0;i<networks.length;i++) {
+			
+			System.out.println("Network: "+networks[i]+", method: ");
+			InferenceTester obj = new InferenceTester(networks[i]);
 
-		System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
-				obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
+			obj.setSeed(9762L);
 
-		EvidenceCase evidence = obj.getRandomEvidence(2);
-		List<Variable> variablesOfInterest = obj.getRandomVariablesOfInterest(1, evidence);//en enunciado pide 6 en vez de 1
+			System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
+					obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
 
-		obj.VEInference(variablesOfInterest, evidence);
+			EvidenceCase evidence = obj.getRandomEvidence(2);
+			List<Variable> variablesOfInterest = obj.getRandomVariablesOfInterest(6, evidence);//en enunciado pide 6 en vez de 1
+
+			obj.VEInference(variablesOfInterest, evidence);
+			
+		}
+		
 	}
 
 }
