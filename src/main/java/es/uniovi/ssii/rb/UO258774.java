@@ -21,9 +21,9 @@ import org.openmarkov.inference.likelihoodWeighting.LogicSampling;
 // the time taken by different algorithms
 public class UO258774 {
 
-	private ProbNet probNet;
+	private static ProbNet probNet;
 	private Long seed;
-	private Random rnd;
+	private static Random rnd;
 
 	public UO258774(String fileName) throws Exception {
 		probNet = NetsIO.openNetworkFile("src/main/resources/networks/"+fileName).getProbNet();
@@ -35,6 +35,7 @@ public class UO258774 {
 		return probNet;
 	}
 
+	@SuppressWarnings("static-access")
 	public void setProbNet(ProbNet probNet) {
 		this.probNet = probNet;
 	}
@@ -89,8 +90,8 @@ public class UO258774 {
 
 		for (Variable variable : variablesOfInterest) {
 			TablePotential posteriorProbabilitiesPotential = posteriorProbabilities.get(variable);
-			System.out.format("P( %s=%s | %s) = %.5f\n", variable, variable.getStates()[0].getName(), evidenceString,
-					posteriorProbabilitiesPotential.values[0]);
+			System.out.format("P( %s=%s | %s) = %.5f\n", variable, variable.getStates()[1].getName(), evidenceString,
+					1-posteriorProbabilitiesPotential.values[0]);
 		}
 	}
 
@@ -153,23 +154,24 @@ public class UO258774 {
 		System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
 				obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
 
-		EvidenceCase evidence = obj.getRandomEvidence(1);
-		List<Variable> variablesOfInterest = obj.getRandomVariablesOfInterest(6, evidence);//en enunciado pide 6 en vez de 1
+		//Evidencia
+		EvidenceCase evidence = new EvidenceCase();
+		Variable variable = probNet.getVariables().get(5);
+		Variable variable2 = probNet.getVariables().get(0);
+		evidence.addFinding(probNet, variable.getName(), "no");
+		evidence.addFinding(probNet, variable2.getName(), "no");
+
+		//Variables de interés
+		List<Variable> variablesOfInterest = new ArrayList<Variable>();
+		List<Variable> possibleVariables = probNet.getVariables();
+		variablesOfInterest.add(possibleVariables.get(7));
+
 
 		System.out.println("######## Inferencia aproximada ########\n");
-
 		System.out.println("#### Muestreo estocastico (LogicSampling) ####");
-		long initialSeed=0L;//La misma semilla para los algoritmos de inferencia aproximada
-		long time=0;
-		for(int i=0;i<5;i++) {
-			System.out.println();
-			obj.setSeed(initialSeed);
-			time+=obj.LSInference(variablesOfInterest, evidence);
-			System.out.println();
-		}
-		System.out.println();
-		System.out.println("Tiempo medio");
-		printTime(time/5);
+
+		obj.LSInference(variablesOfInterest, evidence);
+
 
 	}
 
