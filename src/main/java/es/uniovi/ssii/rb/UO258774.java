@@ -15,10 +15,7 @@ import org.openmarkov.core.model.network.ProbNet;
 import org.openmarkov.core.model.network.Variable;
 import org.openmarkov.core.model.network.potential.TablePotential;
 import org.openmarkov.gui.dialog.io.NetsIO;
-import org.openmarkov.inference.huginPropagation.HuginPropagation;
-import org.openmarkov.inference.likelihoodWeighting.LikelihoodWeighting;
 import org.openmarkov.inference.likelihoodWeighting.LogicSampling;
-import org.openmarkov.inference.variableElimination.tasks.VEPropagation;
 
 // This class carries out evidence propagation on a given network printing out
 // the time taken by different algorithms
@@ -51,66 +48,6 @@ public class UO258774 {
 		rnd.setSeed(seed);
 	}
 
-	public long VEInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
-
-		VEPropagation propagation = null;
-		try {
-			propagation = new VEPropagation(probNet);
-		} catch (NotEvaluableNetworkException e) {
-			e.printStackTrace();
-		}
-		propagation.setVariablesOfInterest(variablesOfInterest);
-
-		propagation.setPostResolutionEvidence(evidence);
-
-		System.out.print("Variable elimination (VE)\n");
-		long startTime = System.nanoTime();
-		try {
-			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
-			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
-
-		} catch (IncompatibleEvidenceException | NotEvaluableNetworkException e) {
-			e.printStackTrace();
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		long endTime = System.nanoTime();
-
-		printTime(endTime - startTime);
-
-		return (endTime - startTime);
-	}
-
-	public long HuginInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
-
-		HuginPropagation propagation = null;
-		try {
-			propagation = new HuginPropagation(probNet);
-		} catch (NotEvaluableNetworkException e) {
-			e.printStackTrace();
-		}
-		propagation.setVariablesOfInterest(variablesOfInterest);
-
-		propagation.setPostResolutionEvidence(evidence);
-
-		System.out.print("Arboles de uniones (HuginPropagation)\n");
-		long startTime = System.nanoTime();
-		try {
-			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
-			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
-
-		} catch (IncompatibleEvidenceException e) {
-			e.printStackTrace();
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		long endTime = System.nanoTime();
-
-		printTime(endTime - startTime);
-
-		return (endTime - startTime);
-	}
-
 	public long LSInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
 
 		LogicSampling propagation = null;
@@ -125,37 +62,6 @@ public class UO258774 {
 		propagation.setPostResolutionEvidence(evidence);
 
 		System.out.print("Muestreo estocastico (LogicSample)\n");
-		long startTime = System.nanoTime();
-		try {
-			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
-			printProbabilities(evidence, variablesOfInterest, posteriorProbabilities);
-
-		} catch (IncompatibleEvidenceException e) {
-			e.printStackTrace();
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		long endTime = System.nanoTime();
-
-		printTime(endTime - startTime);
-
-		return (endTime - startTime);
-	}
-
-	public long LWInference(List<Variable> variablesOfInterest, EvidenceCase evidence) {
-
-		LikelihoodWeighting propagation = null;
-		try {
-			propagation = new LikelihoodWeighting(probNet);
-		} catch (NotEvaluableNetworkException e) {
-			e.printStackTrace();
-		}
-		propagation.setSampleSize(10000);
-		propagation.setVariablesOfInterest(variablesOfInterest);
-
-		propagation.setPostResolutionEvidence(evidence);
-
-		System.out.print("Ponderacion de la verosimilitud (LikelihoodWeighting)\n");
 		long startTime = System.nanoTime();
 		try {
 			Map<Variable, TablePotential> posteriorProbabilities = propagation.getPosteriorValues();
@@ -242,7 +148,7 @@ public class UO258774 {
 
 	public static void main(String[] args) throws Exception {
 
-		UO258774 obj = new UO258774("water.pgmx");
+		UO258774 obj = new UO258774("asia.pgmx");
 
 		System.out.format("Network \"%s\" with %d nodes and %d links\n", obj.getProbNet().getName(),
 				obj.getProbNet().getNumNodes(), obj.getProbNet().getLinks().size());
@@ -250,42 +156,11 @@ public class UO258774 {
 		EvidenceCase evidence = obj.getRandomEvidence(1);
 		List<Variable> variablesOfInterest = obj.getRandomVariablesOfInterest(6, evidence);//en enunciado pide 6 en vez de 1
 
-
-		System.out.println("######## Inferencia exacta ########\n");
-
-		System.out.println("#### Eliminacion de variables (VEPropagation) ####");
-		long time=0;
-		long initialSeed=0L;
-		for(int i=0;i<5;i++) {
-			System.out.println();
-			initialSeed++;
-			obj.setSeed(initialSeed);
-			time+=obj.VEInference(variablesOfInterest, evidence);
-			System.out.println();
-		}
-		System.out.println();
-		System.out.println("Tiempo medio");
-		printTime(time/5);
-
-		System.out.println("#### Arboles de uniones (HuginPropagation)#### ");
-		time=0;
-		initialSeed=0L;
-		for(int i=0;i<5;i++) {
-			System.out.println();
-			initialSeed++;
-			obj.setSeed(initialSeed);
-			time+=obj.HuginInference(variablesOfInterest, evidence);
-			System.out.println();
-		}
-		System.out.println();
-		System.out.println("Tiempo medio");
-		printTime(time/5);
-
 		System.out.println("######## Inferencia aproximada ########\n");
 
 		System.out.println("#### Muestreo estocastico (LogicSampling) ####");
-		initialSeed=0L;//La misma semilla para los algoritmos de inferencia aproximada
-		time=0;
+		long initialSeed=0L;//La misma semilla para los algoritmos de inferencia aproximada
+		long time=0;
 		for(int i=0;i<5;i++) {
 			System.out.println();
 			obj.setSeed(initialSeed);
@@ -296,17 +171,6 @@ public class UO258774 {
 		System.out.println("Tiempo medio");
 		printTime(time/5);
 
-		System.out.println("#### Ponderacion de la verosimilitud (LikelihoodWeighting) ####");
-		time=0;
-		for(int i=0;i<5;i++) {
-			System.out.println();
-			obj.setSeed(initialSeed);
-			time+=obj.LWInference(variablesOfInterest, evidence);
-			System.out.println();
-		}
-		System.out.println();
-		System.out.println("Tiempo medio");
-		printTime(time/5);
 	}
 
 }
